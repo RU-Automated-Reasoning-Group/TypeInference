@@ -13,6 +13,7 @@ type expr =
   | If of expr * expr * expr
   | FunctionCall of expr * expr
   | Let of var * bool * expr * expr
+  | Cons of expr * expr
   (* | Closure of environment * var * expr *)
 
 module CharMap = Map.Make(String)
@@ -25,6 +26,7 @@ type typeScheme =
     | TStr
     | T of string
     | TFun of typeScheme * typeScheme
+    | TList of typeScheme
 
 
 (* annotated expr -> expr with types *)
@@ -39,6 +41,7 @@ type aexpr =
   | AIf of aexpr * aexpr * aexpr * typeScheme
   | AFunctionCall of aexpr * aexpr * typeScheme
   | ALet of var * bool * aexpr * aexpr * typeScheme
+  | ACons of aexpr * aexpr * typeScheme
 ;;
 
 (********************************************)
@@ -63,7 +66,8 @@ let string_of_type (t: typeScheme) =
     | T(x) -> x
     | TFun(t1, t2) -> let st1 = aux t1  in
       let st2 = aux t2 in
-      (Printf.sprintf "(%s -> %s)" st1 st2) in
+      (Printf.sprintf "(%s -> %s)" st1 st2)
+    | TList t -> let st = aux t in (Printf.sprintf "(%s list)" st) in
   let s = aux t in s
 ;;
 
@@ -103,6 +107,10 @@ let rec string_of_aexpr (ae: aexpr): string =
       Printf.sprintf "(let rec %s = %s in %s): %s" id s1 s2 st
     else
       Printf.sprintf "(let %s = %s in %s): %s" id s1 s2 st
+  | ACons (e1, e2, t) ->
+    let s1 = string_of_aexpr e1 and
+    s2 = string_of_aexpr e2 and st = string_of_type t in
+    Printf.sprintf "(%s :: %s): %s" s1 s2 st
 ;;
 
 (* expr to string *)
@@ -135,6 +143,9 @@ let rec string_of_expr (e: expr): string =
       Printf.sprintf "(let rec %s = %s in %s)" id s1 s2
     else
       Printf.sprintf "(let %s = %s in %s)" id s1 s2
+  | Cons (e1, e2) ->
+    let s1 = string_of_expr e1 and s2 = string_of_expr e2 in
+    Printf.sprintf "(%s :: %s)" s1 s2
 ;;
 
 (********************************************)
@@ -159,7 +170,9 @@ let pp_string_of_type (t: typeScheme) =
       Printf.sprintf "'%s" gen_chr, new_chr, new_map
     | TFun(t1, t2) -> let (st1, c1, m1) = aux t1 chr map in
       let (st2, c2, m2) = aux t2 c1 m1 in
-      (Printf.sprintf "(%s -> %s)" st1 st2), c2, m2 in
+      (Printf.sprintf "(%s -> %s)" st1 st2), c2, m2
+    | TList t -> let (st, c, m) = aux t chr map in
+      (Printf.sprintf "(%s list)" st), c, m in
   let s, _, _ = aux t 97 CharMap.empty in s
 ;;
 
@@ -198,4 +211,8 @@ let rec pp_string_of_aexpr (ae: aexpr): string =
       Printf.sprintf "(let rec %s = %s in %s): %s" id s1 s2 st
     else
       Printf.sprintf "(let %s = %s in %s): %s" id s1 s2 st
+  | ACons (e1, e2, t) ->
+    let s1 = pp_string_of_aexpr e1 and
+    s2 = pp_string_of_aexpr e2 and st = pp_string_of_type t in
+    Printf.sprintf "(%s :: %s): %s" s1 s2 st
 ;;

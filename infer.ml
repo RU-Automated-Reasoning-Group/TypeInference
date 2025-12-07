@@ -1,7 +1,5 @@
 open MicroCamlTypes
 
-(* Part 3: Type Inference *)
-
 (*******************************************************************|
 |**********************   Environment   ****************************|
 |*******************************************************************|
@@ -108,6 +106,7 @@ let rec substitute (u: typeScheme) (x: string) (t: typeScheme) : typeScheme =
   | TNum | TBool | TStr -> t
   | T(c) -> if c = x then u else t
   | TFun(t1, t2) -> TFun(substitute u x t1, substitute u x t2)
+  | TList (t) -> TList (substitute u x t)
 ;;
 
 (******************************************************************|
@@ -198,6 +197,7 @@ and unify_one (t1: typeScheme) (t2: typeScheme) : substitutions =
   | TNum, TNum | TBool, TBool | TStr, TStr -> []
   | T(x), z | z, T(x) -> [(x, z)]
   | TFun(a, b), TFun(x, y) -> unify [(a, x); (b, y)]
+  | TList t1, TList t2 -> unify [(t1, t2)]
   | _ -> raise (failwith "mismatched types")
 ;;
 
@@ -214,6 +214,7 @@ let rec apply_expr (subs: substitutions) (ae: aexpr): aexpr =
   | AIf(e1, e2, e3, t) -> AIf(apply_expr subs e1, apply_expr subs e2, apply_expr subs e3, apply subs t)
   | AFunctionCall(fn, arg, t) -> AFunctionCall(apply_expr subs fn, apply_expr subs arg, apply subs t)
   | ALet(id, b, e1, e2, t) -> ALet(id, b, apply_expr subs e1, apply_expr subs e2, apply subs t)
+  | ACons (e1, e2, t) -> ACons (apply_expr subs e1, apply_expr subs e2, apply subs t)
 ;;
 
 (******************************************************************|

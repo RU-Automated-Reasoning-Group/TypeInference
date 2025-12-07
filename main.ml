@@ -258,6 +258,48 @@ let public_expr_xx_type _ =
     assert false
   with OccursCheckException -> (type_variable := (Char.code 'a')) | _ -> (type_variable := (Char.code 'a'); assert (1 = 0))
 
+
+let public_cons_type _ =
+ (* let rec g f x y = ( f x ) : : ( g f ( f y ) x ) in g *)
+ let prog = Let ("g", true,
+     (* g = fun f -> fun x -> fun y -> (f x) :: (g f (f y) x) *)
+     Fun ("f",
+       Fun ("x",
+         Fun ("y",
+           Cons (
+             (* f x *)
+             FunctionCall (ID "f", ID "x"),
+             (* g f (f y) x  ≡  (((g f) (f y)) x) *)
+             FunctionCall (
+               FunctionCall (
+                 FunctionCall (ID "g", ID "f"),
+                 FunctionCall (ID "f", ID "y")
+               ),
+               ID "x"
+             )
+           )
+         )
+       )
+     ),
+     (* body of the let: just refer to g (top-level binding) *)
+     ID "g"
+     )
+ in
+ let a = gen_new_type() in
+ (* (('a -> 'a) -> ('a -> ('a -> ('a list)))) *)
+ let result = pp_string_of_type (
+     TFun (
+     TFun (a, a),                          (* 'a -> 'a *)
+     TFun (a,                              (* 'a -> ... *)
+       TFun (a,                            (* 'a -> ... *)
+         TList a                           (* 'a list *)
+       )
+     )
+    )
+ ) in
+ let student = pp_string_of_type (infer prog) in
+ assert (student = result)
+
 let public_constraint_solving _ =
   (*a = (int -> c)
   c = b
@@ -419,6 +461,10 @@ let main () =
     with e -> (error_count := !error_count + 1;
     let msg = Printexc.to_string e and stack = Printexc.get_backtrace () in
     Printf.eprintf "there was an error: %s %s\n" msg stack) in
+  let _ = try public_cons_type()
+    with e -> (error_count := !error_count + 1;
+    let msg = Printexc.to_string e and stack = Printexc.get_backtrace () in
+    Printf.eprintf "there was an error: %s %s\n" msg stack) in
 
   let _ = try public_constraint_solving()
     with e -> (error_count := !error_count + 1;
@@ -426,6 +472,6 @@ let main () =
     Printf.eprintf "there was an error: %s %s\n" msg stack) in
 
   if !error_count = 0 then  Printf.printf ("Passed all testcases.\n")
-  else Printf.printf ("%d out of 32 programming questions are incorrect.\n") (!error_count)
+  else Printf.printf ("%d out of 33 programming questions are incorrect.\n") (!error_count)
 
 let _ = main()
