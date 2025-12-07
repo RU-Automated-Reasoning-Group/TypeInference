@@ -40,6 +40,7 @@ type expr =
   | If of expr * expr * expr
   | FunctionCall of expr * expr
   | Let of var * bool * expr * expr (* bool determines whether var is recursive *)
+  | Cons of expr * expr (* list construction e1 :: e2 *)
 ```
 
 ### Typing Constraint Generation
@@ -64,6 +65,7 @@ type typeScheme =
     | TStr                                  (string type)
     | T of string                           (type variable for an unknown type)
     | TFun of typeScheme * typeScheme       (function type)
+    | TList of typeScheme                   (list type)
 ```
 More information about type schemes can be found in the lecture 13 slides. As an example, consider a function `fun x -> x 1`. Its OCaml type is `(int -> 'a) -> 'a` (the higher order function takes a function `x` as input and returns the results of applying the function `x` to 1). In our project, this type is written as  `TFun(TFun(TNum, T "'a"), T "'a")`.
 
@@ -80,6 +82,7 @@ type aexpr =
   | AIf of aexpr * aexpr * aexpr * typeScheme
   | AFunctionCall of aexpr * aexpr * typeScheme
   | ALet of var * bool * aexpr * aexpr * typeScheme
+  | ACons of aexpr * aexpr * typeScheme
 ```
 It follows `type expr` defined above except that any `aexpr` expression must be paired with a type scheme which holds the type information of the expression. For example, `5` should be annotated as `AInt (5, TNum)`. As another example, consider the anonymous function `fun x -> x 1`. As we initially have no idea of the type of the function parameter `x`, we use a type scheme `T "a"` to represent the unknown type of `x`. Similarly, we do not know the type of the return of the anonymous function so we use a type scheme `T "b"` to represent this unknown type. Observe that `x` is applied to `1` in the body of the anonymous function. As we have no knowledge about the return type of the function `x`, we once again annotate `x 1` a type scheme `T "c"`. Thus, the annotated expression is:
 ```ocaml
@@ -221,6 +224,10 @@ G |- (let rec f = u1 in u2) ==> (let rec f = e1 in e2: t2), t2, q1 @ [(a, t1)] @
 ```
 
 The second rule above is for typing recursive functions e.g. `let rec f = fun x -> if x <= 0 then 1 else x * f(x-1) in f 5`. When type checking for `u1`, it is important to add to the type environment a type for `f`. This is because `f` can be recursively used in `u1`. Since we do not know the type of `f` initially, we annotate it with an unknown type `a` and build constraints over it. When type checking `u2`, it is also necessary to extend the typing environment with `(f: t1)` as `f` may be used in `u2`.
+
+11. Typing cons expressions.
+
+Note that you are expected to design the typing rule for cons expressions `e1 :: e2`, as in Exam II.
 
 ### Typing Constraint Solver
 
