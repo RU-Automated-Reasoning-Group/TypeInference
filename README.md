@@ -45,7 +45,7 @@ type expr =
 
 ### Typing Constraint Generation
 
-As stated in the lecture 13, type inference consists of three steps: (1) Annotate (2) Generate Constraints (3) Solve Constraints. In this part of the project, we will implement a function `gen` for both annotation and constraint generation:
+As stated in the lecture 15, type inference consists of three steps: (1) Annotate (2) Generate Constraints (3) Solve Constraints. In this part of the project, we will implement a function `gen` for both annotation and constraint generation:
 ```ocaml
 let rec gen (env: environment) (e: expr): aexpr * typeScheme * (typeScheme * typeScheme) list = ...
 ```
